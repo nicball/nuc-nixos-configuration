@@ -25,4 +25,3 @@
   users.users.lighttpd.extraGroups = [ "systemd-journal" ];
   networking.firewall.allowedTCPPorts = [ 80 443 ];
 }
-
