@@ -13,6 +13,7 @@
       ./lighttpd.nix
       ./wireguard.nix
       ./tailscale.nix
+      ./postgresql.nix
     ];
 
   # Use the systemd-boot EFI boot loader.
@@ -121,8 +122,17 @@
   # services.openssh.permitRootLogin = "yes";
 
   # Open ports in the firewall.
-  networking.firewall.allowedTCPPorts = [ 25565 8123 1935 9090 ];
-  # networking.firewall.allowedUDPPorts = [];
+  networking.firewall.allowedTCPPorts = [
+    25565 8123 # mc
+    1935 # owncast
+    9090 # clash
+    # 3001 3005 # shapez
+    2344 2345 # arma3
+    7500 # frps dashboard
+  ];
+  networking.firewall.allowedUDPPorts = [
+    2302 2303 2304 2305 2306 2344 # arma3
+  ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
 

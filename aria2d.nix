@@ -46,4 +46,5 @@ in
     };
   
     networking.firewall.allowedTCPPorts = [ 6800 ];
+    networking.firewall.allowedUDPPortRanges = [ { from = 6881; to = 6999; } ];
   }
