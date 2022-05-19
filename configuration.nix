@@ -13,7 +13,8 @@
       ./lighttpd.nix
       ./wireguard.nix
       ./tailscale.nix
-      ./postgresql.nix
+      # ./postgresql.nix
+      # ./matrix.nix
     ];
 
   # Use the systemd-boot EFI boot loader.

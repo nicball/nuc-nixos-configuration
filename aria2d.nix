@@ -24,27 +24,26 @@ let
     bt-tracker=${builtins.readFile ./bt-trackers.txt}
   '';
 in
-  {
-    users.users.aria2d = {
-      isSystemUser = true;
-      home = "/var/aria2d";
-      group = "aria2d";
+{
+  users.users.aria2d = {
+    isSystemUser = true;
+    home = "/var/aria2d";
+    group = "aria2d";
+  };
+  users.groups.aria2d = {};
+
+  systemd.services.aria2d = {
+    description = "Aria2 Daemon";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = "${pkgs.aria2}/bin/aria2c --conf-path=${aria2Config}";
+      User = "aria2d";
+      Group = "aria2d";
     };
-    users.groups.aria2d = {};
-  
-    environment.systemPackages = [ pkgs.aria2 ];
-  
-    systemd.services.aria2d = {
-      description = "Aria2 Daemon";
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        Type = "simple";
-        ExecStart = "/run/current-system/sw/bin/aria2c --conf-path=${aria2Config}";
-        User = "aria2d";
-        Group = "aria2d";
-      };
-    };
-  
-    networking.firewall.allowedTCPPorts = [ 6800 ];
-    networking.firewall.allowedUDPPortRanges = [ { from = 6881; to = 6999; } ];
-  }
+  };
+
+  networking.firewall.allowedTCPPorts = [ 6800 ];
+  networking.firewall.allowedUDPPortRanges = [ { from = 6881; to = 6999; } ];
+}
