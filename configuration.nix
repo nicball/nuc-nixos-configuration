@@ -13,9 +13,13 @@
       ./lighttpd.nix
       ./wireguard.nix
       ./tailscale.nix
+      ./factorio.nix
       # ./postgresql.nix
       # ./matrix.nix
+      # ./redis.nix
     ];
+
+  programs.sway.enable = true;
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
@@ -86,8 +90,8 @@
       lm_sensors sysstat cpufrequtils
       # games
       papermc openttd terraria-server steamcmd jre
+      (steam.override { extraLibraries = pkgs: [ pkgs.icu63 ]; }).run
     ];
-  programs.steam.enable = true;
   virtualisation.docker.enable = true;
 
   nix.extraOptions = ''
@@ -129,10 +133,12 @@
     9090 # clash
     # 3001 3005 # shapez
     2344 2345 # arma3
-    7500 # frps dashboard
+    # 7500 # frps dashboard
+    5900 # vnc
   ];
   networking.firewall.allowedUDPPorts = [
     2302 2303 2304 2305 2306 2344 # arma3
+    27015 27016 # barotrauma
   ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;

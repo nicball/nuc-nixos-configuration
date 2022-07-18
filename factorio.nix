@@ -7,9 +7,10 @@
     description = "Nicball's Factorio Server";
     game-name = "MidyMidyFactorio";
     game-password = builtins.readFile ./private/factorio-password;
-    saveName = "default";
+    saveName = "server_krastorio_se";
     lan = true;
     openFirewall = true;
+    autosave-interval = 1440;
     # extraSettings = { auto_pause = false; };
     mods =
       let
@@ -29,5 +30,22 @@
           // { deps = []; };
       in
         builtins.map modToDrv modList;
+    package = pkgs.factorio-headless.overrideAttrs (self: super: {
+      installPhase = super.installPhase + ''
+        wrapProgram $out/bin/factorio --add-flags "--rcon-bind localhost:9790 --rcon-password 233"
+      '';
+      nativeBuildInputs = (super.nativeBuildInputs or []) ++ [ pkgs.makeWrapper ];
+    });
+  };
+
+  systemd.services.factorio-bot = {
+    description = "Factorio Telegram Bridge";
+    wantedBy = [ "factorio.service" ];
+    after = [ "factorio.service" ];
+    partOf = [ "factorio.service" ];
+    serviceConfig = {
+      Restart = "always";
+      ExecStart = "${pkgs.jre}/bin/java -Dhttp.proxyHost=localhost -Dhttp.proxyPort=7890 -Dhttps.proxyHost=localhost -Dhttps.proxyPort=7890 -jar " + ./private/factorio-bot.jar;
+    };
   };
 }
