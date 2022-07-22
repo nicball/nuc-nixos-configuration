@@ -1,6 +1,6 @@
 {
   outputs = { self, nixpkgs }: {
-    nixosConfigurations.nicball-nixos-nuc6i5syh = nixpkgs.lib.nixosSystem {
+    nixosConfigurations.nicball-nixos-um560 = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [ ./configuration.nix ];
     };

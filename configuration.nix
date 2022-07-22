@@ -24,23 +24,40 @@
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+
+  # For wifi driver
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
+  # For amd turbo boost
+  boot.kernelParams = [
+    "initcall_blacklist=acpi_cpufreq_init"
+    "amd_pstate.shared_mem=1"
+  ];
+  boot.kernelModules = [ "amd-pstate" ];
+  powerManagement.cpuFreqGovernor = "performance";
   
   time.timeZone = "Asia/Shanghai";
 
-  hardware.opengl = {
-    enable = true;
-    extraPackages = [ pkgs.intel-media-driver ];
-  };
+  # hardware.opengl = {
+  #   enable = true;
+  #   extraPackages = [ pkgs.intel-media-driver ];
+  # };
 
-  networking.hostName = "nicball-nixos-nuc6i5syh";
+  networking.hostName = "nicball-nixos-um560";
   networking.proxy.httpProxy = "http://127.0.0.1:7890";
   networking.proxy.httpsProxy = "http://127.0.0.1:7890";
   networking.proxy.noProxy = "127.0.0.1,localhost";
   networking.useDHCP = false;
-  networking.interfaces.eno1.useDHCP = true;
-  networking.interfaces.wlp1s0.useDHCP = true;
-  networking.interfaces.wlp1s0.tempAddress = "disabled";
-  networking.dhcpcd.extraConfig = "release";
+  networking.interfaces.eno1.useDHCP = false;
+  networking.interfaces.eno1.ipv4.addresses = [ {
+    address = "192.168.42.42";
+    prefixLength = 24;
+  } ];
+  networking.interfaces.wlp2s0.useDHCP = true;
+  networking.interfaces.wlp2s0.tempAddress = "disabled";
+  networking.dhcpcd.extraConfig = ''
+    release
+  '';
   networking.wireless = {
     enable = true;
     networks = {
