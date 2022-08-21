@@ -18,6 +18,9 @@
         dir-listing.activate = "enable"
         dir-listing.encoding = "utf-8"
       }
+      $HTTP["host"] == "factorio.nicball.me" {
+        server.document-root = "/srv/www/factorio"
+      }
 
       server.breakagelog = "/tmp/lighttpd-breakage.log"
     '';

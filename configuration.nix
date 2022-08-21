@@ -12,14 +12,27 @@
       ./update-dns.nix
       ./lighttpd.nix
       ./wireguard.nix
-      ./tailscale.nix
+      # ./tailscale.nix
       ./factorio.nix
       # ./postgresql.nix
       # ./matrix.nix
       # ./redis.nix
     ];
 
+  # services.xserver = {
+  #   enable = true;
+  #   videoDrivers = [ "amdgpu" ];
+  #   autorun = false;
+  #   # displayManager.xpra.enable = true;
+  # };
+
   programs.sway.enable = true;
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    pulse.enable = true;
+  };
+  programs.steam.enable = true;
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
@@ -84,7 +97,7 @@
     createHome = false;
     home = "/home/nicball";
     shell = pkgs.fish;
-    extraGroups = [ "wheel" "docker" ];
+    extraGroups = [ "wheel" "docker" "aria2d" ];
     hashedPassword = "$6$2ftGKK8s43tQPi3E$joCjNfgJQjUH8Lq3MUVOTyHXrh4ANPvmdh7m/jCzCQR6ogpzteRIoY.pIHpC0pGlNd5biJAQOge2iZ7oBit.u/";
     openssh.authorizedKeys.keys = [
       "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDD/sYNnlvX6Hfrwb8y90+yHRg5JODsi7JSkM/IOuJIumxNGISqtQuEJWwQoV5csLNPOILtLS/8EiS/EhkPXWNkJddE/6BC0/cQkUtVrC3x7Y2tfY3Fr0XdlqHwh+AwX13mFbzTbU9N9qTXZ5rZwuh1+4IS24Ite/d5S9CIHvOWi3yEOYFU+BOdItO9Dxou8C4PPZ/lx+Tc2l7aq+/ZW9cEIwh4GkH7ewFbFGrrNlrKrZae4Tfiyln1n/AN4o8tKQTsJOci/KPlmrU74NrWuMQVay6Tt9tI4XvSQFDnuToDwqet15oGYC11gd9ggMFT5QuEtuC8bob8pe9I84pkwowpGmlxQ95OdjVI82mJNYULTAWwRIZ6OUKPEAsMEnHYqL1pYM/HeSKUOdlGAUsZKgfx6kuY/altbCM1d4sBWeP35o7pd/UZHO2MSzjUn0ZGjRf8qmcIOzx8OIJqBpFFD5wTmK61AfClDduKjoebCab6q2yGL9QJmNvuMuB4IeYi1oE= sahib@sahib-laptop"
@@ -107,7 +120,6 @@
       lm_sensors sysstat cpufrequtils
       # games
       papermc openttd terraria-server steamcmd jre
-      (steam.override { extraLibraries = pkgs: [ pkgs.icu63 ]; }).run
     ];
   virtualisation.docker.enable = true;
 
@@ -140,22 +152,29 @@
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
-  services.openssh.enable = true;
-  # services.openssh.permitRootLogin = "yes";
+  services.openssh = {
+    enable = true;
+    # permitRootLogin = "yes";
+    forwardX11 = true;
+    passwordAuthentication = false;
+  };
 
   # Open ports in the firewall.
   networking.firewall.allowedTCPPorts = [
     25565 8123 # mc
-    1935 # owncast
+    # 1935 # owncast
     9090 # clash
     # 3001 3005 # shapez
     2344 2345 # arma3
     # 7500 # frps dashboard
     5900 # vnc
+    10308 # dcs
+    8088 # dcs web
   ];
   networking.firewall.allowedUDPPorts = [
     2302 2303 2304 2305 2306 2344 # arma3
-    27015 27016 # barotrauma
+    # 27015 27016 # barotrauma
+    10308 # dcs
   ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;

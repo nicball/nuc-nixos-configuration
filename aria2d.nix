@@ -9,7 +9,7 @@ let
     input-file=/var/aria2d/.session
     save-session=/var/aria2d/.session
     save-session-interval=3600
-    file-allocation=none
+    file-allocation=falloc
     log-level=warn
     max-concurrent-downloads=16
     split=16
