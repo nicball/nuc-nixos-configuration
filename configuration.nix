@@ -8,6 +8,7 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      ./networks.nix
       ./aria2d.nix
       ./update-dns.nix
       ./lighttpd.nix
@@ -60,23 +61,6 @@
   networking.proxy.httpProxy = "http://127.0.0.1:7890";
   networking.proxy.httpsProxy = "http://127.0.0.1:7890";
   networking.proxy.noProxy = "127.0.0.1,localhost";
-  networking.useDHCP = false;
-  networking.interfaces.eno1.useDHCP = false;
-  networking.interfaces.eno1.ipv4.addresses = [ {
-    address = "192.168.42.42";
-    prefixLength = 24;
-  } ];
-  networking.interfaces.wlp2s0.useDHCP = true;
-  networking.interfaces.wlp2s0.tempAddress = "disabled";
-  networking.dhcpcd.extraConfig = ''
-    release
-  '';
-  networking.wireless = {
-    enable = true;
-    networks = {
-      Cain = { pskRaw = "23bce2da261d5c51a04006afe42507d703afd0ca82fa2e0baf28d946b0b3ee4d"; };
-    };
-  };
   services.zerotierone = {
     enable = true;
     joinNetworks = [ "8286ac0e47b1e8e6" ];

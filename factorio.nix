@@ -10,7 +10,8 @@
     saveName = "server_krastorio_se";
     lan = true;
     openFirewall = true;
-    autosave-interval = 1440;
+    autosave-interval = 60;
+    requireUserVerification = false;
     # extraSettings = { auto_pause = false; };
     mods =
       let
