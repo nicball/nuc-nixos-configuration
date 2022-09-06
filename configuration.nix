@@ -18,6 +18,7 @@
       # ./postgresql.nix
       # ./matrix.nix
       # ./redis.nix
+      ./clash.nix
     ];
 
   # services.xserver = {
@@ -154,11 +155,14 @@
     5900 # vnc
     10308 # dcs
     8088 # dcs web
+    # 5201 # iperf
+    7890 7891 # clash
   ];
   networking.firewall.allowedUDPPorts = [
     2302 2303 2304 2305 2306 2344 # arma3
     # 27015 27016 # barotrauma
     10308 # dcs
+    7890 7891 # clash
   ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;

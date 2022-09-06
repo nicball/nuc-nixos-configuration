@@ -9,6 +9,7 @@
     };
     wlp2s0 = {
       useDHCP = false;
+      tempAddress = "disabled";
       ipv4.addresses = [ {
         address = "192.168.0.42";
         prefixLength = 24;
@@ -25,31 +26,31 @@
 
   networking.nat = {
     enable = true;
-    enableIPv6 = true;
+    # enableIPv6 = true;
     internalInterfaces = [ "wlp2s0" ];
     internalIPs = [ "192.168.0.0/24" ];
     externalInterface = "eno1";
   };
 
-  services.radvd = {
-    enable = true;
-    config = ''
-      interface wlp2s0 {
-        IgnoreIfMissing on;
-        AdvSendAdvert on;
-        prefix ::/64 {
-          AdvOnLink on;
-          AdvAutonomous on;
-        };
-      };
-    '';
-  };
+  # services.radvd = {
+  #   enable = true;
+  #   config = ''
+  #     interface wlp2s0 {
+  #       IgnoreIfMissing on;
+  #       AdvSendAdvert on;
+  #       prefix ::/64 {
+  #         AdvOnLink on;
+  #         AdvAutonomous on;
+  #       };
+  #     };
+  #   '';
+  # };
 
   services.dhcpd4 = {
     enable = true;
     interfaces = [ "wlp2s0" "eno1" ]; # TODO
     extraConfig = ''
-      option domain-name-servers 8.8.8.8, 208.67.222.222;
+      option domain-name-servers 8.8.8.8, 8.8.4.4;
       subnet 192.168.42.0 netmask 255.255.255.0 {
         option routers 192.168.42.1;
         range 192.168.42.100 192.168.42.200;
@@ -66,12 +67,14 @@
     extraConfig = ''
       release
       duid
+      slaac hwaddr
       noipv6rs
       waitip 6
       interface eno1
         ipv6rs
         iaid 1
         ia_pd 1/::/64 wlp2s0/0/64
+        static domain_name_servers=8.8.8.8 8.8.4.4
     '';
     allowInterfaces = [ "eno1" "wlp2s0" ];
   };
