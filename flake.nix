@@ -1,8 +1,10 @@
 {
-  outputs = { self, nixpkgs }: {
-    nixosConfigurations.nicball-nixos-um560 = nixpkgs.lib.nixosSystem {
+  inputs.emacs-overlay.url = "github:nix-community/emacs-overlay";
+  outputs = { self, nixpkgs, ... }@inputs: {
+    nixosConfigurations.nicball-nixos = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [ ./configuration.nix ];
+      specialArgs = inputs;
     };
   };
 }
