@@ -6,8 +6,8 @@
     admins = [ "nicball" ];
     description = "Nicball's Factorio Server";
     game-name = "MidyMidyFactorio";
-    game-password = builtins.readFile ./private/factorio-password;
-    saveName = "server_krastorio_se";
+    game-password = pkgs.lib.removeSuffix "\n" (builtins.readFile ./private/factorio-password);
+    saveName = "server";
     lan = true;
     openFirewall = true;
     autosave-interval = 60;

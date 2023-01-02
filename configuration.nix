@@ -2,13 +2,30 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, emacs-overlay, ... }:
+{ config, pkgs, ... }:
 
 {
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      ./aria2d.nix
+      ./lighttpd.nix
+      ./update-dns.nix
+      ./factorio.nix
     ];
+
+  services.xserver.enable = true;
+
+  programs.sway = {
+    enable = true;
+    wrapperFeatures.gtk = true;
+    extraPackages = with pkgs; [ wayvnc swayidle ];
+  };
+  xdg = {
+    portal.wlr.enable = true;
+  };
+
+  security.polkit.enable = true;
 
   # try gnome
   # services.xserver = {
@@ -53,94 +70,22 @@
   # Do nothing when closing the lid with wall power
   services.logind.lidSwitchExternalPower = "ignore";
 
-  # Sway
-  programs.sway = {
-    enable = true;
-    wrapperFeatures.gtk = true;
-    extraPackages =
-      with pkgs;
-      let screenshot = writeShellScriptBin "screenshot" ''
-        file=$(mktemp /tmp/XXXXXXXXXXX-screenshot.png)
-        grim $file
-        read w h x y < <(slurp -f "%w %h %x %y")
-        convert $file -crop $((w*3/2))x$((h*3/2))+$((x*3/2))+$((y*3/2)) /tmp/latest-screenshot.png
-        wl-copy --type image/png < /tmp/latest-screenshot.png
-        rm $file
-      ''; in
-      [ screenshot dmenu waybar grim slurp wl-clipboard mako gnome.adwaita-icon-theme imagemagick ];
-    extraOptions = [ "--unsupported-gpu" ];
-  };
-  xdg = {
-    portal.wlr.enable = true;
-  };
-
-  # Input methods
-  i18n.inputMethod = {
-    enabled = "fcitx5";
-    fcitx5.addons = with pkgs; [ fcitx5-rime ];
-  };
-
-  # Fonts
-  fonts.fonts = with pkgs; [
-    source-han-sans source-han-serif
-    source-code-pro
-    font-awesome_5
-    mononoki
-    julia-mono
-  ];
-
-  # Sound
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    pulse.enable = true;
-  };
-  environment.etc = {
-    "wireplumber/bluetooth.lua.d/51-bluez-config.lua".text = ''
-      bluez_monitor.properties = {
-        ["bluez5.enable-sbc-xq"] = true,
-        ["bluez5.enable-msbc"] = true,
-        ["bluez5.enable-hw-volume"] = true,
-        ["bluez5.headset-roles"] = "[ hsp_hs hsp_ag hfp_hf hfp_ag ]"
-      }
-    '';
-  };
-  hardware.bluetooth = {
-    enable = true;
-  };
-
   # Steam
   programs.steam.enable = true;
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.efi.canTouchEfiVariables = false;
 
-  # For keyboard patch
-  boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_0;
-
-  # For realtek wifi
-  boot.extraModulePackages = [ (builtins.getFlake "github:nicball/nicpkgs/f6653bf2f270517bf26efe43a39c13b5cc226918").packages.x86_64-linux.rtw89 ];
-  hardware.firmware = [ (builtins.getFlake "github:nicball/nicpkgs/f6653bf2f270517bf26efe43a39c13b5cc226918").packages.x86_64-linux.rtw89-firmware ];
-
-  # For amd turbo boost
-  # boot.kernelParams = [
-  #   "initcall_blacklist=acpi_cpufreq_init"
-  #   "amd_pstate.shared_mem=1"
-  # ];
-  # boot.kernelModules = [ "amd-pstate" ];
-  # powerManagement.cpuFreqGovernor = "performance";
-  
   # Time zone
   time.timeZone = "Asia/Shanghai";
   # Compatible with Windows
   time.hardwareClockInLocalTime = true;
 
-  # hardware.opengl = {
-  #   enable = true;
-  #   extraPackages = [ pkgs.intel-media-driver ];
-  # };
+  hardware.opengl = {
+    enable = true;
+    extraPackages = [ pkgs.intel-media-driver ];
+  };
 
   # Clash
   systemd.services.clash = {
@@ -154,26 +99,24 @@
 
   # Network
   networking = {
-    hostName = "nicball-nixos";
+    hostName = "nicball-nuc-nixos";
 
     proxy.httpProxy = "http://127.0.0.1:7890";
     proxy.httpsProxy = "http://127.0.0.1:7890";
     proxy.noProxy = "127.0.0.1,localhost";
 
     useDHCP = false;
-    interfaces.enp2s0.useDHCP = true;
-    interfaces.wlo1.useDHCP = true;
+    interfaces.wlp2s0.useDHCP = true;
 
     # Disable IPV6 temp address
     tempAddresses = "disabled";
 
     # DNS
-    nameservers = [ "8.8.8.8" "8.8.4.4" "2001:4860:4860::8888" "2001:4860:4860::8888" ];
-    hosts = {
-        "202.38.64.59" = [ "wlt.ustc.edu.cn" "wlt" ];
-    };
+    # nameservers = [ "8.8.8.8" "8.8.4.4" "2001:4860:4860::8888" "2001:4860:4860::8888" ];
+    # hosts = {
+    #     "202.38.64.59" = [ "wlt.ustc.edu.cn" "wlt" ];
+    # };
     dhcpcd.extraConfig = ''
-        nohook resolv.conf
         release
     '';
 
@@ -183,10 +126,12 @@
     wireless.userControlled.enable = true; # allow wpa_cli to connect
   };
 
-  # services.zerotierone = {
-  #   enable = true;
-  #   joinNetworks = [ "8286ac0e47b1e8e6" ];
-  # };
+  # Zerotier
+  services.zerotierone = {
+    enable = true;
+    joinNetworks = [ "8286ac0e47b1e8e6" ];
+  };
+
   # services.samba = {
   #   enable = true;
   #   openFirewall = true;
@@ -203,7 +148,7 @@
   # Users
   users.users.nicball = {
     isNormalUser = true;
-    createHome = false;
+    createHome = true;
     home = "/home/nicball";
     shell = pkgs.fish;
     extraGroups = [ "wheel" "docker" "networkmanager" ];
@@ -213,6 +158,7 @@
       "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCsJCAQa0SniQbEtPifaAQxoq3N68DnbSWzmSNj8h16D3RXW1054QUYleoSJcmS4P9tiXv1FxcE3hJkjByqnxX81bdSazpXNtN3186V/EpKXXcEXb+eERVZ7xkcaM2VS0CkytOXGxHtCCCypbVvJBKgbiSiqF3/94ItXz3PHp3m/iKVhibFl41tWp5cvB0bWfxtePtk4j60TpmwJU2ReSN01F7lVxHuxH4lqoFlOAXS5pxXuEOkBh1E/KIS8ycI4yYsSw+NpfMGJi2kwCtS+F5vmRSJvSZcfOy8WkEyT34GmrPAKLj+K3vleFHfdbEQIp/G8TR1/D9gmc5qANPCIb1MCnQdDMaP53vc7sn3CzjyCW7xXDNgdyfKqQjVBc1TDu47lEi/m+dcQ6z15aRQR5Zq/MOTd+GgYo1OgIdDZJbiNAtyzC5T0cZ9o1cbnPEQ6gSeKYXnp/7+3M+1qcgalVKj9Rt0uk/1sIdX/dPk/GkvOK/VX8lXJXuk570KWosgzIE= sahib@sahib-laptop"
       "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCQLT7PlxmtUtHpJaDIcrAZGwL7Alah861wUY9WJGNMMhT+A+GxyLFCb7K0kN4n59C6K0flMuGYjYkGw/rbf9uYLrLDhaY9PR51UcOOeMNmy7+miadBaHTgssIRFV0TIscQF5mNIzIit+m5gWNPq2cNlSe41ziCnUU7S3MpYB0J/2M5/EVz71PS7dmvgCKF9bR16Q+C2tNArho8UGgBnET9v8w/cLzzp2SRedXcvN7O3Ya2rQkcwMOTGHAE9+9ozmfIqzUBS2XJj4NaCTTBJta+6EEj89OK11bAZjmf+WrbJ28on066GyA//YdBJtwE+0ndc+taxg7mtXynS+c15EbN oneplus"
       "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDKxLJ4lOEgEjbRKPBTypjOybPFOouuV0R+cHrmSCKR0WNBMN3HF7Pz3ApyDOJIQSb5q+xH2/GcP9VS2cxiU/UUzHJ4eqnu8Dw66+ERFuepjU/yPg1CuOHmKEZf1g7s+24AxlMSCYMEhRPy1zbwEynIk46/x/k/8V2sso/u9kTqymDjd4RLWieJfgtZ31kD/iLpTWP+WXDcuW4G67/T9VN8xdaJ8L6guefWQi9wcNWabJ4zWM1kBXq92CMEOU45wBNVU+EZFQ5J30LKhgh44w6f7M3xhUk8ifJ924caZu825gmyayFtKEfkcSpcr2AlCr/FHjPJVNuCVfd4Q6ENY5lV55/cwMx9ufm6OoCL6BoQnDHr71Djo/ee7/WNxx8wF6wOl0M1M1rV5bnq4wZrw+8OvyGejEN/kScpjySSVNB2z+hi1o93aSZ2ocb1ztUGKoCxfFf6xoQpO1sXjSL+Vbilae7joYVvm8sJRtX61LuQ1ylYCxWcki1KhvgTPEFslhc= nicball@nicball-nixos-laptop"
+      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC327ykndQwtbf4L/ZaSgMMbfG7VFHasc/kYGTjF94hC6ahiii4f5Hfh2imOJCKYdzLHBDu/fsHicKbM4ykaEGXvIikj2zZZ3kF7+hAGDrhzz/vAINYDywvWXU3o/BHCeeeKTRcTLw1dcvLwp1Vw08CusgqMdvGcPTtbMC5R/BwwdBAwATo7QFkt/nD5V8DU0wjV+nhpHZ+rCUfQ8+c0fFHiEyRXIgF7ls/Pu2Unwe/OJoybKE7Who7qjvXlYHskzT1zfQG47L3g61ancfYiX1B44A02fjR6hIwbjfBBm4PDlUrE0qGYs0lkriv6n8bVYPBbKeaPqSHsbjRtHd8HvvjMuD1oqmoGd32HIGno+flrGNSGYqpoHXFAVVfQ5bEXe03qV6L7Q9TeR9Eo4/7JwrufTnqE7msAkut1DXgat9++jik2GLzRBhkLqNYOF4mV4gcOaCliEwLJJr4OCKHEBwsMNQZ9THxAy46RL5ALEKC1BSJRLMcWiXqmnHmboYZpas= nicball@nicball-nixos-nuc6i5syh"
     ];
   };
   users.users.wine = {
@@ -227,25 +173,12 @@
   # Fish shell
   programs.fish.enable = true;
 
-  # Emacs
-  nixpkgs.overlays = [ (import emacs-overlay) ];
-
   # Apps
   environment.systemPackages =
     with pkgs;
     [
       # dev
       vim git nodejs kakoune gcc jre gradle
-      ((emacsPackagesFor emacsPgtkNativeComp).emacsWithPackages (epkgs: [epkgs.vterm])) ripgrep # direnv nix-direnv
-      (pkgs.agda.withPackages (p: [ p.standard-library ]))
-
-      # i3
-      # polybarFull xclip maim dmenu
-
-      # apps
-      kitty google-chrome mate.caja vlc pavucontrol
-      obs-studio clash tigervnc
-      calibre tdesktop
 
       # cli tools
       file acpilight wget htop zip unzip neofetch jq screen
@@ -253,14 +186,14 @@
       sysstat usbutils pciutils pv rsync
       dhcp iperf lsof iw wirelesstools traceroute aria2
 
-      # games
-      # openttd minecraft fabric-installer mc
+      # for termcap
+      kitty
+
     ];
 
   # Default Applications
   environment.variables = {
       EDITOR = "kak";
-      BROWSER = "google-chrome-stable";
   };
 
   # Docker
@@ -291,27 +224,27 @@
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
-  # services.openssh = {
-  #   enable = true;
+  services.openssh = {
+    enable = true;
   #   # permitRootLogin = "yes";
-  #   forwardX11 = true;
-  #   passwordAuthentication = false;
-  # };
+    forwardX11 = true;
+    passwordAuthentication = false;
+  };
 
   # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [
+  networking.firewall.allowedTCPPorts = [
   #   25565 8123 # mc
   #   # 1935 # owncast
   #   9090 # clash
   #   # 3001 3005 # shapez
   #   2344 2345 # arma3
   #   # 7500 # frps dashboard
-  #   5900 # vnc
+    5900 # vnc
   #   10308 # dcs
   #   8088 # dcs web
   #   # 5201 # iperf
   #   # 7890 7891 # clash
-  # ];
+  ];
   # networking.firewall.allowedUDPPorts = [
   #   2302 2303 2304 2305 2306 2344 # arma3
   #   # 27015 27016 # barotrauma
