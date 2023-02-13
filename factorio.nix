@@ -12,7 +12,7 @@
     openFirewall = true;
     autosave-interval = 60;
     requireUserVerification = false;
-    # extraSettings = { auto_pause = false; };
+    extraSettings = { auto_pause = false; };
     mods =
       let
         inherit (pkgs) lib;

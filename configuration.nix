@@ -12,6 +12,7 @@
       ./lighttpd.nix
       ./update-dns.nix
       ./factorio.nix
+      ./private/cloudflare-tunnel.nix
     ];
 
   services.xserver.enable = true;
@@ -245,12 +246,13 @@
   #   # 5201 # iperf
   #   # 7890 7891 # clash
   ];
-  # networking.firewall.allowedUDPPorts = [
+  networking.firewall.allowedUDPPorts = [
   #   2302 2303 2304 2305 2306 2344 # arma3
   #   # 27015 27016 # barotrauma
   #   10308 # dcs
   #   # 7890 7891 # clash
-  # ];
+    15777 15000 7777 # satisfactory
+  ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = true;
 

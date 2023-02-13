@@ -4,7 +4,7 @@
   services.lighttpd = {
     enable = true;
     # mod_userdir = true;
-    enableModules = [ "mod_cgi" "mod_alias" ];
+    enableModules = [ "mod_cgi" "mod_alias" "mod_accesslog" ];
     extraConfig = ''
       cgi.assign = (
         ".sh"  => "/run/current-system/sw/bin/bash",
