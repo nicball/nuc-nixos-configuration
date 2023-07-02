@@ -26,7 +26,7 @@
         modToDrv = modFileName:
           pkgs.runCommand "copy-factorio-mods" {} ''
             mkdir $out
-            cp ${modDir + "/${modFileName}"} $out/${modFileName}
+            cp '${modDir}/${modFileName}' '$out/${modFileName}'
           ''
           // { deps = []; };
       in
