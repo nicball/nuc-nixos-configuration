@@ -23,10 +23,15 @@
           (lib.mapAttrsToList (k: v: k))
           (builtins.filter (lib.hasSuffix ".zip"))
         ];
+        validPath = modFileName:
+          builtins.path {
+            path = modDir + "/${modFileName}";
+            name = lib.strings.sanitizeDerivationName modFileName;
+          };
         modToDrv = modFileName:
           pkgs.runCommand "copy-factorio-mods" {} ''
             mkdir $out
-            cp '${modDir}/${modFileName}' '$out/${modFileName}'
+            ln -s '${validPath modFileName}' "$out/${modFileName}"
           ''
           // { deps = []; };
       in
@@ -39,14 +44,14 @@
     });
   };
 
-  systemd.services.factorio-bot = {
-    description = "Factorio Telegram Bridge";
-    wantedBy = [ "factorio.service" ];
-    after = [ "factorio.service" ];
-    partOf = [ "factorio.service" ];
-    serviceConfig = {
-      Restart = "always";
-      ExecStart = "${pkgs.jre}/bin/java -Dhttp.proxyHost=localhost -Dhttp.proxyPort=7890 -Dhttps.proxyHost=localhost -Dhttps.proxyPort=7890 -jar " + ./private/factorio-bot.jar;
-    };
-  };
+  # systemd.services.factorio-bot = {
+  #   description = "Factorio Telegram Bridge";
+  #   wantedBy = [ "factorio.service" ];
+  #   after = [ "factorio.service" ];
+  #   partOf = [ "factorio.service" ];
+  #   serviceConfig = {
+  #     Restart = "always";
+  #     ExecStart = "${pkgs.jre}/bin/java -Dhttp.proxyHost=localhost -Dhttp.proxyPort=7890 -Dhttps.proxyHost=localhost -Dhttps.proxyPort=7890 -jar " + ./private/factorio-bot.jar;
+  #   };
+  # };
 }
