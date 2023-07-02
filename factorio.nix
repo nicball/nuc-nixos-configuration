@@ -31,7 +31,7 @@
         modToDrv = modFileName:
           pkgs.runCommand "copy-factorio-mods" {} ''
             mkdir $out
-            ln -s '${validPath modFileName}' "$out/${modFileName}"
+            ln -s '${validPath modFileName}' $out/'${modFileName}'
           ''
           // { deps = []; };
       in
