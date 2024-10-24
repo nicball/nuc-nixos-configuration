@@ -68,6 +68,7 @@ in
     wantedBy = [ "multi-user.target" ];
     after = [ "network.target" ];
     serviceConfig = sandboxing-config // {
+      MemoryDenyWriteExecute = false;
       Restart = "always";
       DynamicUser = "true";
       StateDirectory = "synapse";
@@ -221,6 +222,9 @@ in
     };
   };
 
-  services.redis.servers.nodebb.enable = true;
+  services.redis.servers.nodebb = {
+    enable = true;
+    port = 6379;
+  };
 
 }
