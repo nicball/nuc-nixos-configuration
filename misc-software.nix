@@ -21,7 +21,7 @@
   # };
 
   # WireShark
-  programs.wireshark.enable = true;
+  # programs.wireshark.enable = true;
 
   # Man pages for devs
   documentation.dev.enable = true;

@@ -18,11 +18,14 @@ let
 in
 
 {
+  imports = [ ./factorio.nix ];
+
   systemd.services.mautrix-telegram = {
     description = "Mautrix Telegram Bridge";
     after = [ "synapse.service" ];
     partOf = [ "synapse.service" ];
     requires = [ "synapse.service" ];
+    environment = config.networking.proxy.envVars;
     serviceConfig = sandboxing-config // {
       Restart = "always";
       DynamicUser = "true";
@@ -67,6 +70,7 @@ in
     description = "Synapse Matrix Home Server";
     wantedBy = [ "multi-user.target" ];
     after = [ "network.target" ];
+    environment = config.networking.proxy.envVars;
     serviceConfig = sandboxing-config // {
       MemoryDenyWriteExecute = false;
       Restart = "always";
@@ -123,6 +127,8 @@ in
       };
     };
 
+  networking.firewall.allowedTCPPorts = [ 8080 ];
+
   # systemd.user.services.fvckbot = {
   #   description = "Yet another telegram bot";
   #   serviceConfig = {
@@ -158,9 +164,12 @@ in
     interval = "hourly";
     pandoc = pkgs.pandoc-static;
   } // import ./private/instaepub.nix;
-  systemd.services.instaepub.serviceConfig = {
-    User = "nicball";
-    Group = "users";
+  systemd.services.instaepub = {
+    serviceConfig = {
+      User = "nicball";
+      Group = "users";
+    };
+    environment = config.networking.proxy.envVars;
   };
 
   nic.cloudflare-ddns = {
@@ -190,7 +199,7 @@ in
 
   systemd.services.crawler = {
     description = "Web Crawler";
-    wantedBy = [ "multi-user.target" ];
+    environment = config.networking.proxy.envVars;
     serviceConfig = sandboxing-config // {
       DynamicUser = true;
       StateDirectory = "16k-crawler";

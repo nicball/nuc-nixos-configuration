@@ -6,7 +6,7 @@
     admins = [ "nicball" ];
     description = "Nicball's Factorio Server";
     game-name = "MidyMidyFactorio";
-    game-password = pkgs.lib.removeSuffix "\n" (builtins.readFile ./private/factorio-password);
+    game-password = import ./private/factorio-password.nix;
     saveName = "server";
     lan = true;
     openFirewall = true;
@@ -44,14 +44,16 @@
     });
   };
 
-  # systemd.services.factorio-bot = {
-  #   description = "Factorio Telegram Bridge";
-  #   wantedBy = [ "factorio.service" ];
-  #   after = [ "factorio.service" ];
-  #   partOf = [ "factorio.service" ];
-  #   serviceConfig = {
-  #     Restart = "always";
-  #     ExecStart = "${pkgs.jre}/bin/java -Dhttp.proxyHost=localhost -Dhttp.proxyPort=7890 -Dhttps.proxyHost=localhost -Dhttps.proxyPort=7890 -jar " + ./private/factorio-bot.jar;
-  #   };
-  # };
+  systemd.services.factorio-bot = {
+    description = "Factorio Telegram Bridge";
+    after = [ "factorio.service" ];
+    requires = [ "factorio.service" ];
+    partOf = [ "factorio.service" ];
+    wantedBy = [ "factorio.service" ];
+    environment = config.networking.proxy.envVars // import ./private/factorio-bot-env.nix;
+    serviceConfig = {
+      ExecStart = "${pkgs.factorio-bot}/bin/midymidy-factorio-webservice";
+      Restart = "always";
+    };
+  };
 }

@@ -28,12 +28,18 @@
   # Notifications
   nic.dunst.enable = true;
 
-  # Steam
-  programs.steam = {
+  # Streaming
+  services.sunshine = {
     enable = true;
-    fontPackages = with pkgs; [ source-han-sans ];
-    extraCompatPackages = [ pkgs.proton-ge-bin ];
+    openFirewall = true;
   };
+
+  # Steam
+  # programs.steam = {
+  #   enable = true;
+  #   fontPackages = with pkgs; [ source-han-sans ];
+  #   extraCompatPackages = [ pkgs.proton-ge-bin ];
+  # };
 
   # kde-connect
   # programs.kdeconnect.enable = true;
@@ -108,14 +114,14 @@
     wl-clipboard
 
     ## Multimedia
-    mpv obs-studio # tigervnc
-    yesplaymusic foliate
+    # mpv obs-studio # tigervnc
+    # yesplaymusic foliate
 
     ## Document
-    libreoffice # calibre
+    # libreoffice # calibre
 
     ## Game
-    gamescope prismlauncher # lutris openttd minecraft fabric-installer
+    # gamescope prismlauncher # lutris openttd minecraft fabric-installer
   ];
 
   # Default Applications

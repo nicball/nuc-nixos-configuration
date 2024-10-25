@@ -14,6 +14,7 @@
     ./network.nix
     ./private/passwords.nix
     ./services.nix
+    ./intel.nix
   ];
 
   boot.loader.efi.canTouchEfiVariables = true;
