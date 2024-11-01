@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   services.factorio = {
@@ -15,7 +15,6 @@
     extraSettings = { auto_pause = false; };
     mods =
       let
-        inherit (pkgs) lib;
         modDir = ./factorio-mods;
         modList = lib.pipe modDir [
           builtins.readDir
