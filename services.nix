@@ -127,7 +127,7 @@ in
       };
     };
 
-  networking.firewall.allowedTCPPorts = [ 8080 ];
+  networking.firewall.allowedTCPPorts = [ 8080 6800 ];
 
   # systemd.user.services.fvckbot = {
   #   description = "Yet another telegram bot";
@@ -186,6 +186,7 @@ in
       ProtectSystem = "full";
       User = "nicball";
       Group = "users";
+      WorkingDirectory = "/srv/www/files";
       ExecStart =
         let
           aria2 = pkgs.aria2.override ({
