@@ -15,29 +15,50 @@ let
     RestrictNamespaces = true;
     MemoryDenyWriteExecute = true;
   };
+
+  make-service = { sandboxing ? true, name ? null, dynamic-user ? true, proxy ? false, ... }@args:
+    let
+      merge = lib.foldl' lib.recursiveUpdate {};
+      passthru = lib.filterAttrs (k: v: !builtins.hasAttr k (lib.functionArgs make-service)) args;
+    in
+    merge [
+      (lib.optionalAttrs sandboxing {
+        serviceConfig = sandboxing-config;
+      })
+      (lib.optionalAttrs dynamic-user {
+        serviceConfig = {
+          DynamicUser = true;
+          StateDirectory = name;
+          WorkingDirectory = "/var/lib/" + name;
+        };
+      })
+      (lib.optionalAttrs proxy {
+        environment = config.networking.proxy.envVars;
+      })
+      ({
+        serviceConfig.Restart = "always";
+        wantedBy = [ "multi-user.target" ];
+      })
+      passthru
+    ];
+
 in
 
 {
-  imports = [ ./factorio.nix ];
+  # imports = [ ./factorio.nix ];
 
-  systemd.services.mautrix-telegram = {
+  systemd.services.mautrix-telegram = make-service {
     description = "Mautrix Telegram Bridge";
+    name = "mautrix-telegram";
+    proxy = true;
     after = [ "synapse.service" ];
     partOf = [ "synapse.service" ];
     requires = [ "synapse.service" ];
-    environment = config.networking.proxy.envVars;
-    serviceConfig = sandboxing-config // {
-      Restart = "always";
-      DynamicUser = "true";
-      StateDirectory = "mautrix-telegram";
-      ExecStart =
-        let
-          py = pkgs.python3.withPackages (p: with p; [ pysocks pkgs.mautrix-telegram ]);
-        in
-        "${py}/bin/python3 -m mautrix_telegram";
-      WorkingDirectory = "/var/lib/mautrix-telegram";
-    };
-    wantedBy = [ "multi-user.target" ];
+    serviceConfig.ExecStart =
+      let
+        py = pkgs.python3.withPackages (p: with p; [ pysocks pkgs.mautrix-telegram ]);
+      in
+      "${py}/bin/python3 -m mautrix_telegram";
   };
   nixpkgs.config.permittedInsecurePackages = [ "olm-3.2.16" ];
 
@@ -66,18 +87,14 @@ in
   #   };
   # };
 
-  systemd.services.synapse = {
+  systemd.services.synapse = make-service {
     description = "Synapse Matrix Home Server";
-    wantedBy = [ "multi-user.target" ];
+    name = "synapse";
+    proxy = true;
     after = [ "network.target" ];
-    environment = config.networking.proxy.envVars;
-    serviceConfig = sandboxing-config // {
+    serviceConfig = {
       MemoryDenyWriteExecute = false;
-      Restart = "always";
-      DynamicUser = "true";
-      StateDirectory = "synapse";
       ExecStart = "${pkgs.matrix-synapse}/bin/synapse_homeserver -c home_server.yaml";
-      WorkingDirectory = "/var/lib/synapse";
     };
   };
 
@@ -99,35 +116,25 @@ in
   #   Install.WantedBy = [ "default.target" ];
   # };
 
-  systemd.services.cloudflared = {
+  systemd.services.cloudflared = make-service {
     description = "Cloudflare Argo Tunnel";
-    wantedBy = [ "multi-user.target" ];
+    name = "cloudflared";
     after = [ "network.target" ];
-    serviceConfig = sandboxing-config // {
-      DynamicUser = true;
-      ExecStart = "${pkgs.cloudflared}/bin/cloudflared tunnel --no-autoupdate run --token ${import ./private/cloudflared-token.nix}";
-      Restart = "always";
-      WorkingDirectory = "/empty";
-    };
+    serviceConfig.ExecStart = "${pkgs.cloudflared}/bin/cloudflared tunnel --no-autoupdate run --token ${import ./private/cloudflared-token.nix}";
   };
 
   systemd.services.caddy =
     let configFile = pkgs.writeText "caddy-config" ''
-      :8080
+      :80
       file_server browse
       root * /srv/www
     '';
-    in {
+    in make-service {
       description = "Caddy HTTP Server";
-      wantedBy = [ "multi-user.target" ];
+      name = "caddy";
       after = [ "network.target" ];
-      serviceConfig = sandboxing-config // {
-        ExecStart = "${pkgs.caddy}/bin/caddy run --adapter caddyfile --config ${configFile}";
-        WorkingDirectory = "/empty";
-      };
+      serviceConfig.ExecStart = "${pkgs.caddy}/bin/caddy run --adapter caddyfile --config ${configFile}";
     };
-
-  networking.firewall.allowedTCPPorts = [ 8080 6800 ];
 
   # systemd.user.services.fvckbot = {
   #   description = "Yet another telegram bot";
@@ -178,11 +185,11 @@ in
     log-path = "/tmp/cloudflare-ddns.log";
   } // import ./private/cloudflare-ddns.nix;
 
-  systemd.services.aria2d = {
+  systemd.services.aria2d = make-service {
     description = "Aria2 Daemon";
-    wantedBy = [ "multi-user.target" ];
     after = [ "network.target" ];
-    serviceConfig = sandboxing-config // {
+    dynamic-user = false;
+    serviceConfig = {
       ProtectSystem = "full";
       User = "nicball";
       Group = "users";
@@ -198,15 +205,11 @@ in
     };
   };
 
-  systemd.services.crawler = {
+  systemd.services.crawler = make-service {
     description = "Web Crawler";
-    environment = config.networking.proxy.envVars;
-    serviceConfig = sandboxing-config // {
-      DynamicUser = true;
-      StateDirectory = "16k-crawler";
-      ExecStart = "${pkgs.python3.withPackages (p: [ p.requests ])}/bin/python3 bot.py";
-      WorkingDirectory = "/var/lib/16k-crawler";
-    };
+    name = "16k-crawler";
+    proxy = true;
+    serviceConfig.ExecStart = "${pkgs.python3.withPackages (p: [ p.requests ])}/bin/python3 bot.py";
   };
 
   systemd.timers.crawler = {
@@ -215,26 +218,26 @@ in
     timerConfig.OnCalendar = "hourly";
   };
 
-  systemd.services.nodebb = {
-    description = "NodeBB forum";
-    requires = [ "redis-nodebb.service" ];
-    after = [ "redis-nodebb.service" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      DynamicUser = true;
-      StateDirectory = "nodebb";
-      Environment = "PATH=${pkgs.nodejs}/bin";
-      ExecStart = "/var/lib/nodebb/nodebb start";
-      ExecStop = "/var/lib/nodebb/nodebb stop";
-      Type = "oneshot";
-      RemainAfterExit = true;
-      WorkingDirectory = "/var/lib/nodebb";
-    };
-  };
+  # systemd.services.nodebb = make-service {
+  #   description = "NodeBB forum";
+  #   name = "nodebb";
+  #   requires = [ "redis-nodebb.service" ];
+  #   after = [ "redis-nodebb.service" ];
+  #   serviceConfig = {
+  #     Environment = "PATH=${pkgs.nodejs}/bin";
+  #     ExecStart = "/var/lib/nodebb/nodebb start";
+  #     ExecStop = "/var/lib/nodebb/nodebb stop";
+  #     Type = "oneshot";
+  #     Restart = "no";
+  #     RemainAfterExit = true;
+  #   };
+  # };
 
-  services.redis.servers.nodebb = {
-    enable = true;
-    port = 6379;
-  };
+  # services.redis.servers.nodebb = {
+  #   enable = true;
+  #   port = 6379;
+  # };
+
+  networking.firewall.allowedTCPPorts = [ 80 6800 ];
 
 }
