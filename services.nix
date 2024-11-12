@@ -17,6 +17,7 @@ let
   };
 
   make-service = { sandboxing ? true, name ? null, dynamic-user ? true, proxy ? false, ... }@args:
+    assert dynamic-user -> name != null;
     let
       merge = lib.foldl' lib.recursiveUpdate {};
       passthru = lib.filterAttrs (k: v: !builtins.hasAttr k (lib.functionArgs make-service)) args;
