@@ -12,15 +12,14 @@
     openFirewall = true;
     autosave-interval = 60;
     requireUserVerification = false;
-    extraSettings = { auto_pause = false; };
+    extraSettings = { auto_pause = false; autosave_slots = 100; };
     mods =
       let
         modDir = ./factorio-mods;
         modList = lib.pipe modDir [
           builtins.readDir
-          (lib.filterAttrs (k: v: v == "regular"))
-          (lib.mapAttrsToList (k: v: k))
-          (builtins.filter (lib.hasSuffix ".zip"))
+          (lib.filterAttrs (k: v: v == "regular" && lib.hasSuffix ".zip" k))
+          builtins.attrNames
         ];
         validPath = modFileName:
           builtins.path {

@@ -16,8 +16,7 @@ let
     MemoryDenyWriteExecute = true;
   };
 
-  make-service = { sandboxing ? true, name ? null, dynamic-user ? true, proxy ? false, ... }@args:
-    assert dynamic-user -> name != null;
+  make-service = { sandboxing ? true, dir ? null, dynamic-user ? true, proxy ? false, ... }@args:
     let
       merge = lib.foldl' lib.recursiveUpdate {};
       passthru = lib.filterAttrs (k: v: !builtins.hasAttr k (lib.functionArgs make-service)) args;
@@ -27,10 +26,12 @@ let
         serviceConfig = sandboxing-config;
       })
       (lib.optionalAttrs dynamic-user {
+        serviceConfig.DynamicUser = true;
+      })
+      (lib.optionalAttrs (dir != null) {
         serviceConfig = {
-          DynamicUser = true;
-          StateDirectory = name;
-          WorkingDirectory = "/var/lib/" + name;
+          StateDirectory = dir;
+          WorkingDirectory = "/var/lib/" + dir;
         };
       })
       (lib.optionalAttrs proxy {
@@ -48,9 +49,18 @@ in
 {
   # imports = [ ./factorio.nix ];
 
+  systemd.services.clash = make-service {
+    description = "Clash Daemon";
+    dir = "clash";
+    after = [ "network.target" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.clash-meta}/bin/clash-meta -f ${./private/clash.yaml} -d /var/lib/clash > /dev/null 2>&1";
+    };
+  };
+
   systemd.services.mautrix-telegram = make-service {
     description = "Mautrix Telegram Bridge";
-    name = "mautrix-telegram";
+    dir = "mautrix-telegram";
     proxy = true;
     after = [ "synapse.service" ];
     partOf = [ "synapse.service" ];
@@ -90,12 +100,14 @@ in
 
   systemd.services.synapse = make-service {
     description = "Synapse Matrix Home Server";
-    name = "synapse";
+    dir = "synapse";
     proxy = true;
     after = [ "network.target" ];
     serviceConfig = {
       MemoryDenyWriteExecute = false;
-      ExecStart = "${pkgs.matrix-synapse}/bin/synapse_homeserver -c home_server.yaml";
+      ExecStart =
+        let oldpkgs = builtins.getFlake "github:NixOS/nixpkgs/8bb37161a0488b89830168b81c48aed11569cb93"; in
+        "${oldpkgs.legacyPackages.${pkgs.system}.matrix-synapse}/bin/synapse_homeserver -c home_server.yaml";
     };
   };
 
@@ -119,7 +131,7 @@ in
 
   systemd.services.cloudflared = make-service {
     description = "Cloudflare Argo Tunnel";
-    name = "cloudflared";
+    dir = "cloudflared";
     after = [ "network.target" ];
     serviceConfig.ExecStart = "${pkgs.cloudflared}/bin/cloudflared tunnel --no-autoupdate run --token ${import ./private/cloudflared-token.nix}";
   };
@@ -132,7 +144,8 @@ in
     '';
     in make-service {
       description = "Caddy HTTP Server";
-      name = "caddy";
+      dynamic-user = false;
+      dir = "caddy";
       after = [ "network.target" ];
       serviceConfig.ExecStart = "${pkgs.caddy}/bin/caddy run --adapter caddyfile --config ${configFile}";
     };
@@ -171,6 +184,7 @@ in
     auto-archive = true;
     interval = "hourly";
     pandoc = pkgs.pandoc-static;
+    enable-instapaper = false;
   } // import ./private/instaepub.nix;
   systemd.services.instaepub = {
     serviceConfig = {
@@ -208,9 +222,14 @@ in
 
   systemd.services.crawler = make-service {
     description = "Web Crawler";
-    name = "16k-crawler";
+    dir = "16k-crawler";
     proxy = true;
-    serviceConfig.ExecStart = "${pkgs.python3.withPackages (p: [ p.requests ])}/bin/python3 bot.py";
+    wantedBy = [];
+    serviceConfig = {
+      Type = "oneshot";
+      Restart = "no";
+      ExecStart = "${pkgs.python3.withPackages (p: [ p.requests ])}/bin/python3 bot.py";
+    };
   };
 
   systemd.timers.crawler = {
@@ -221,7 +240,7 @@ in
 
   # systemd.services.nodebb = make-service {
   #   description = "NodeBB forum";
-  #   name = "nodebb";
+  #   dir = "nodebb";
   #   requires = [ "redis-nodebb.service" ];
   #   after = [ "redis-nodebb.service" ];
   #   serviceConfig = {
@@ -239,6 +258,10 @@ in
   #   port = 6379;
   # };
 
-  networking.firewall.allowedTCPPorts = [ 80 6800 ];
+  networking.firewall = {
+    allowedTCPPorts = [ 80 6800 ];
+    allowedUDPPortRanges = [ { from = 6881; to = 6999; } ];
+    allowedTCPPortRanges = [ { from = 6881; to = 6999; } ];
+  };
 
 }

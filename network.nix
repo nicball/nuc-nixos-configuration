@@ -3,16 +3,6 @@
 {
   imports = [ ./private/wireless-networks.nix ];
 
-  # Clash
-  systemd.services.clash = {
-    description = "Clash Daemon";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network.target" ];
-    serviceConfig = {
-      ExecStart = "${pkgs.clash-meta}/bin/clash-meta -f ${./private/clash.yaml} -d /var/clash > /dev/null 2>&1";
-    };
-  };
-
   services.openssh = {
     enable = true;
     settings.PasswordAuthentication = false;
@@ -64,10 +54,11 @@
 
   networking.firewall.allowedTCPPorts = [
     9090 # clash
+    5900 # vnc
+    # 5901 # osx vnc
+    25565 # 8123 # mc
   ];
-  #   25565 8123 # mc
   #   # 1935 # owncast
-  #   9090 # clash
   #   # 3001 3005 # shapez
   #   2344 2345 # arma3
   #   # 7500 # frps dashboard

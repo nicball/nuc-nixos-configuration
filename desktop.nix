@@ -18,6 +18,7 @@
       enable = true;
       source = ./wallpaper.png;
     };
+    browser = "firefox";
   };
   nic.waybar.enable = true;
   nic.greetd.enable = true;
@@ -29,10 +30,10 @@
   nic.dunst.enable = true;
 
   # Streaming
-  services.sunshine = {
-    enable = true;
-    openFirewall = true;
-  };
+  # services.sunshine = {
+  #   enable = true;
+  #   openFirewall = true;
+  # };
 
   # Steam
   # programs.steam = {
@@ -110,6 +111,7 @@
     # GUI stuff
 
     ## Utility
+    # zen-browser
     firefox
     wl-clipboard
 
@@ -124,6 +126,4 @@
     # gamescope prismlauncher # lutris openttd minecraft fabric-installer
   ];
 
-  # Default Applications
-  environment.variables.BROWSER = "firefox";
 }

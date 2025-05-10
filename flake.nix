@@ -1,6 +1,7 @@
 {
   inputs = {
     nicpkgs.url = "github:nicball/nicpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/f02fddb8acef29a8b32f10a335d44828d7825b78";
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
