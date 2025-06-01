@@ -107,7 +107,7 @@ in
       MemoryDenyWriteExecute = false;
       ExecStart =
         let oldpkgs = builtins.getFlake "github:NixOS/nixpkgs/8bb37161a0488b89830168b81c48aed11569cb93"; in
-        "${oldpkgs.legacyPackages.${pkgs.system}.matrix-synapse}/bin/synapse_homeserver -c home_server.yaml";
+        "${oldpkgs.legacyPackages.${pkgs.system}.matrix-synapse}/bin/synapse_homeserver -c homeserver.yaml";
     };
   };
 
