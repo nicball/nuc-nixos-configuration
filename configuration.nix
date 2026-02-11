@@ -52,6 +52,6 @@
     auto-optimise-store = true;
   };
 
-  system.stateVersion = "21.11";
+  system.stateVersion = "25.11";
 
 }

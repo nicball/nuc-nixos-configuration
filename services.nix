@@ -106,8 +106,7 @@ in
     serviceConfig = {
       MemoryDenyWriteExecute = false;
       ExecStart =
-        let oldpkgs = builtins.getFlake "github:NixOS/nixpkgs/8bb37161a0488b89830168b81c48aed11569cb93"; in
-        "${oldpkgs.legacyPackages.${pkgs.system}.matrix-synapse}/bin/synapse_homeserver -c homeserver.yaml";
+        "${pkgs.matrix-synapse}/bin/synapse_homeserver -c homeserver.yaml";
     };
   };
 
@@ -258,8 +257,14 @@ in
   #   port = 6379;
   # };
 
+  services.vaultwarden = {
+    enable = true;
+    config = {}; # use .env file
+  };
+  systemd.services.vaultwarden.serviceConfig.WorkingDirectory = "/var/lib/vaultwarden";
+
   networking.firewall = {
-    allowedTCPPorts = [ 80 6800 ];
+    allowedTCPPorts = [ 80 6800 1935 25565 5901 ];
     allowedUDPPortRanges = [ { from = 6881; to = 6999; } ];
     allowedTCPPortRanges = [ { from = 6881; to = 6999; } ];
   };

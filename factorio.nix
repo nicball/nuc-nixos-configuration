@@ -12,28 +12,28 @@
     openFirewall = true;
     autosave-interval = 60;
     requireUserVerification = false;
-    extraSettings = { auto_pause = false; autosave_slots = 100; };
-    mods =
-      let
-        modDir = ./factorio-mods;
-        modList = lib.pipe modDir [
-          builtins.readDir
-          (lib.filterAttrs (k: v: v == "regular" && lib.hasSuffix ".zip" k))
-          builtins.attrNames
-        ];
-        validPath = modFileName:
-          builtins.path {
-            path = modDir + "/${modFileName}";
-            name = lib.strings.sanitizeDerivationName modFileName;
-          };
-        modToDrv = modFileName:
-          pkgs.runCommand "copy-factorio-mods" {} ''
-            mkdir $out
-            ln -s '${validPath modFileName}' $out/'${modFileName}'
-          ''
-          // { deps = []; };
-      in
-        builtins.map modToDrv modList;
+    extraSettings = { auto_pause = true; autosave_slots = 100; };
+    # mods =
+    #   let
+    #     modDir = ./factorio-mods;
+    #     modList = lib.pipe modDir [
+    #       builtins.readDir
+    #       (lib.filterAttrs (k: v: v == "regular" && lib.hasSuffix ".zip" k))
+    #       builtins.attrNames
+    #     ];
+    #     validPath = modFileName:
+    #       builtins.path {
+    #         path = modDir + "/${modFileName}";
+    #         name = lib.strings.sanitizeDerivationName modFileName;
+    #       };
+    #     modToDrv = modFileName:
+    #       pkgs.runCommand "copy-factorio-mods" {} ''
+    #         mkdir $out
+    #         ln -s '${validPath modFileName}' $out/'${modFileName}'
+    #       ''
+    #       // { deps = []; };
+    #   in
+    #     builtins.map modToDrv modList;
     package = pkgs.factorio-headless.overrideAttrs (self: super: {
       installPhase = super.installPhase + ''
         wrapProgram $out/bin/factorio --add-flags "--rcon-bind localhost:9790 --rcon-password 233"
@@ -43,7 +43,8 @@
   };
 
   systemd.services.factorio-bot = {
-    description = "Factorio Telegram Bridge";
+    enable = false;
+    description = "Factorio Matrix Bridge";
     after = [ "factorio.service" ];
     requires = [ "factorio.service" ];
     partOf = [ "factorio.service" ];

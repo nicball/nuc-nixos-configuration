@@ -1,8 +1,31 @@
 { pkgs, config, ... }:
 
+let
+  set-epp = pkgs.writeShellScript "set-epp.sh" ''
+    for i in /sys/devices/system/cpu/cpufreq/policy*; do
+      echo "balance_power" > $i/energy_performance_preference
+    done
+  '';
+in
+
 {
   hardware.graphics.extraPackages = with pkgs; [ intel-media-driver intel-ocl intel-compute-runtime ];
   environment.sessionVariables.LIBVA_DRIVER_NAME = "iHD";
+
+  systemd.services.auto-set-epp =
+    let script = pkgs.writeShellScript "set-epp.sh" ''
+      for i in /sys/devices/system/cpu/cpufreq/policy*; do
+        echo "balance_power" > $i/energy_performance_preference
+      done
+    ''; in {
+      description = "Automatically set Intel PState EPP on startup";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "cpufreq.service" ];
+      serviceConfig = {
+        ExecStart = script;
+        Type = "oneshot";
+      };
+    };
 
   # GPU virtualization
   # boot.kernelParams = [ "intel_iommu=on" ];

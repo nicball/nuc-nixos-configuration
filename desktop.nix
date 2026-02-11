@@ -8,7 +8,10 @@
   nic.window-managers = {
     enable = true;
     # niri.enable = true;
-    sway.enable = true;
+    sway = {
+      enable = true;
+      use-swayfx = true;
+    };
     scaling = {
       enable = true;
       factor = 1.5;
