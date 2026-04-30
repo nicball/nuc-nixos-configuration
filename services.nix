@@ -137,9 +137,34 @@ in
 
   systemd.services.caddy =
     let configFile = pkgs.writeText "caddy-config" ''
-      :80
-      file_server browse
-      root * /srv/www
+      {
+        skip_install_trust
+      }
+      nicball.online, :80 {
+        reverse_proxy /jsonrpc http://localhost:6800
+        file_server * browse {
+          root /srv/www
+          hide .private
+        }
+      }
+      lick.nicball.online {
+        reverse_proxy http://localhost:8008
+      }
+      instaepub.nicball.online {
+        reverse_proxy http://localhost:8086
+      }
+      nedrawtib.nicball.online {
+        reverse_proxy http://localhost:8000
+      }
+      owncast.nicball.online {
+        reverse_proxy http://localhost:8082
+      }
+      ping.nicball.online {
+        header {
+          Cache-Control no-store
+        }
+        respond "Pong!"
+      }
     '';
     in make-service {
       description = "Caddy HTTP Server";
@@ -147,20 +172,8 @@ in
       dir = "caddy";
       after = [ "network.target" ];
       serviceConfig.ExecStart = "${pkgs.caddy}/bin/caddy run --adapter caddyfile --config ${configFile}";
+      environment.XDG_DATA_HOME = "/var/lib";
     };
-
-  # systemd.user.services.fvckbot = {
-  #   description = "Yet another telegram bot";
-  #   serviceConfig = {
-  #     ExecStart = "${pkgs.fvckbot}/bin/fvckbot";
-  #     WorkingDirectory = "${config.home.homeDirectory + "/fvckbot"}";
-  #     Environment = [
-  #       "TG_BOT_TOKEN=${import ./private/fvckbot-token.nix}"
-  #       "https_proxy=http://localhost:7890"
-  #     ];
-  #   };
-  #   Install.WantedBy = [ "default.target" ];
-  # };
 
   # systemd.user.services.transfersh = {
   #   description = "Easy and fast file sharing from the command-line";
@@ -177,45 +190,56 @@ in
   #   Install.WantedBy = [ "default.target" ];
   # };
 
-  nic.instaepub = {
-    enable = true;
-    output-dir = "/srv/www/instaepub";
-    auto-archive = true;
-    interval = "hourly";
-    pandoc = pkgs.pandoc-static;
-    enable-instapaper = false;
-  } // import ./private/instaepub.nix;
-  systemd.services.instaepub = {
-    serviceConfig = {
-      User = "nicball";
-      Group = "users";
-    };
-    environment = config.networking.proxy.envVars;
-  };
-
   nic.cloudflare-ddns = {
     enable = true;
-    enable-log = true;
-    log-path = "/tmp/cloudflare-ddns.log";
   } // import ./private/cloudflare-ddns.nix;
 
-  systemd.services.aria2d = make-service {
-    description = "Aria2 Daemon";
+  systemd.services.aria2d =
+    let
+      dir = "/srv/www/files";
+      update-trackers = pkgs.writeShellScript "update-trackers.sh" ''
+        set -o pipefail
+        export https_proxy="${config.networking.proxy.httpsProxy}"
+        PATH="${pkgs.curl}/bin:$PATH"
+        url="https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt"
+        if curl --no-progress-meter "$url" | sed '/^$/d' | tr '\n' ',' > ${dir}/.trackers.new
+        then
+          mv ${dir}/.trackers.new ${dir}/.trackers
+        else
+          echo WARNING: cannot update bt trackers.
+          rm ${dir}/.trackers.new
+        fi
+      '';
+    in
+    make-service {
+      description = "Aria2 Daemon";
+      after = [ "network.target" ];
+      dynamic-user = false;
+      serviceConfig = {
+        ProtectSystem = "full";
+        User = "nicball";
+        Group = "users";
+        WorkingDirectory = dir;
+        ExecStartPre = update-trackers;
+        ExecStart =
+          let
+            aria2 = pkgs.aria2.override ({
+              server-mode = true;
+              inherit dir;
+            } // import ./private/aria2d.nix);
+          in
+          ''/bin/sh -c '${aria2}/bin/aria2c --bt-tracker="$(< ${dir}/.trackers)"' '';
+      };
+    };
+
+  systemd.services.instaepub = make-service {
+    description = "InstaEpub - Fetch webpages as epub.";
     after = [ "network.target" ];
-    dynamic-user = false;
+    proxy = true;
+    dir = "instaepub";
+    environment.HOSTNAME = "instaepub.nicball.online";
     serviceConfig = {
-      ProtectSystem = "full";
-      User = "nicball";
-      Group = "users";
-      WorkingDirectory = "/srv/www/files";
-      ExecStart =
-        let
-          aria2 = pkgs.aria2.override ({
-            server-mode = true;
-            dir = "/srv/www/files";
-          } // import ./private/aria2d.nix);
-        in
-        "${aria2}/bin/aria2c";
+      ExecStart = "${pkgs.instaepub}/bin/instaepub";
     };
   };
 
@@ -243,13 +267,13 @@ in
   #   requires = [ "redis-nodebb.service" ];
   #   after = [ "redis-nodebb.service" ];
   #   serviceConfig = {
-  #     Environment = "PATH=${pkgs.nodejs}/bin";
   #     ExecStart = "/var/lib/nodebb/nodebb start";
   #     ExecStop = "/var/lib/nodebb/nodebb stop";
   #     Type = "oneshot";
   #     Restart = "no";
   #     RemainAfterExit = true;
   #   };
+  #   environment.PATH = "${pkgs.nodejs}/bin";
   # };
 
   # services.redis.servers.nodebb = {
@@ -258,13 +282,14 @@ in
   # };
 
   services.vaultwarden = {
+    package = (builtins.getFlake "github:NixOS/nixpkgs/2c32f66efc44ad2ac74e37e0ed6d546a01eda017").legacyPackages.x86_64-linux.vaultwarden;
     enable = true;
     config = {}; # use .env file
   };
   systemd.services.vaultwarden.serviceConfig.WorkingDirectory = "/var/lib/vaultwarden";
 
   networking.firewall = {
-    allowedTCPPorts = [ 80 6800 1935 25565 5901 ];
+    allowedTCPPorts = [ 80 443 1935 25565 5901 7890 ];
     allowedUDPPortRanges = [ { from = 6881; to = 6999; } ];
     allowedTCPPortRanges = [ { from = 6881; to = 6999; } ];
   };

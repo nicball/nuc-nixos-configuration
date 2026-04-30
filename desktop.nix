@@ -7,11 +7,7 @@
 
   nic.window-managers = {
     enable = true;
-    # niri.enable = true;
-    sway = {
-      enable = true;
-      use-swayfx = true;
-    };
+    hyprland.enable = true;
     scaling = {
       enable = true;
       factor = 1.5;

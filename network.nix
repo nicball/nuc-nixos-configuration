@@ -35,7 +35,7 @@
 
     # Wireless
     wireless.enable = true;
-    wireless.userControlled.enable = true; # allow wpa_cli to connect
+    wireless.userControlled = true; # allow wpa_cli to connect
   };
 
   # services.zerotierone = {
