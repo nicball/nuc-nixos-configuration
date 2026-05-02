@@ -56,7 +56,7 @@
       # polybarFull xclip maim dmenu
 
       # cli tools
-      file wget zip unzip neofetch jq screen unar pv rsync aria2 ffmpeg fd ripgrep
+      file wget zip unzip fastfetch jq screen unar pv rsync aria2 ffmpeg fd ripgrep
 
       # system tools
       cachix

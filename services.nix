@@ -2,18 +2,27 @@
 
 let
   sandboxing-config = {
+    LockPersonality = true;
+    MemoryDenyWriteExecute = true;
     NoNewPrivileges = true;
-    PrivateTmp = true;
     PrivateDevices = true;
-    ProtectSystem = "strict";
-    ProtectHome = true;
+    PrivateTmp = true;
+    PrivateUsers = true;
+    ProtectClock = true;
     ProtectControlGroups = true;
+    ProtectHome = true;
+    ProtectHostname = true;
+    ProtectKernelLogs = true;
     ProtectKernelModules = true;
     ProtectKernelTunables = true;
+    ProtectSystem = "strict";
     RestrictAddressFamilies = [ "AF_UNIX" "AF_INET" "AF_INET6" "AF_NETLINK" ];
-    RestrictRealtime = true;
     RestrictNamespaces = true;
-    MemoryDenyWriteExecute = true;
+    RestrictRealtime = true;
+    RestrictSUIDSGID = true;
+    SystemCallArchitectures = "native";
+    SystemCallErrorNumber = "EPERM";
+    SystemCallFilter = [ "@system-service" "~@mount" ];
   };
 
   make-service = { sandboxing ? true, dir ? null, dynamic-user ? true, proxy ? false, ... }@args:
@@ -65,11 +74,7 @@ in
     after = [ "synapse.service" ];
     partOf = [ "synapse.service" ];
     requires = [ "synapse.service" ];
-    serviceConfig.ExecStart =
-      let
-        py = pkgs.python3.withPackages (p: with p; [ pysocks pkgs.mautrix-telegram ]);
-      in
-      "${py}/bin/python3 -m mautrix_telegram";
+    serviceConfig.ExecStart = "${pkgs.mautrix-telegram}/bin/mautrix-telegram";
   };
   nixpkgs.config.permittedInsecurePackages = [ "olm-3.2.16" ];
 
@@ -168,12 +173,21 @@ in
     '';
     in make-service {
       description = "Caddy HTTP Server";
-      dynamic-user = false;
       dir = "caddy";
       after = [ "network.target" ];
-      serviceConfig.ExecStart = "${pkgs.caddy}/bin/caddy run --adapter caddyfile --config ${configFile}";
+      serviceConfig = {
+        ExecStart = "${pkgs.caddy}/bin/caddy run --adapter caddyfile --config ${configFile}";
+        AmbientCapabilities = "CAP_NET_BIND_SERVICE";
+        CapabilityBoundingSet = "CAP_NET_BIND_SERVICE";
+        PrivateUsers = false;
+      };
       environment.XDG_DATA_HOME = "/var/lib";
     };
+  users.users.caddy = {
+    isSystemUser = true;
+    group = "caddy";
+  };
+  users.groups.caddy = {};
 
   # systemd.user.services.transfersh = {
   #   description = "Easy and fast file sharing from the command-line";
@@ -214,12 +228,10 @@ in
     make-service {
       description = "Aria2 Daemon";
       after = [ "network.target" ];
-      dynamic-user = false;
       serviceConfig = {
         ProtectSystem = "full";
-        User = "nicball";
-        Group = "users";
         WorkingDirectory = dir;
+        ReadWritePaths = dir;
         ExecStartPre = update-trackers;
         ExecStart =
           let
@@ -228,9 +240,14 @@ in
               inherit dir;
             } // import ./private/aria2d.nix);
           in
-          ''/bin/sh -c '${aria2}/bin/aria2c --bt-tracker="$(< ${dir}/.trackers)"' '';
+          ''/bin/sh -c 'exec ${aria2}/bin/aria2c --bt-tracker="$(< ${dir}/.trackers)"' '';
       };
     };
+  users.users.aria2d ={
+    isSystemUser = true;
+    group = "aria2d";
+  };
+  users.groups.aria2d = {};
 
   systemd.services.instaepub = make-service {
     description = "InstaEpub - Fetch webpages as epub.";
@@ -282,7 +299,6 @@ in
   # };
 
   services.vaultwarden = {
-    package = (builtins.getFlake "github:NixOS/nixpkgs/2c32f66efc44ad2ac74e37e0ed6d546a01eda017").legacyPackages.x86_64-linux.vaultwarden;
     enable = true;
     config = {}; # use .env file
   };

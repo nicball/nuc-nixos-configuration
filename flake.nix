@@ -1,7 +1,7 @@
 {
   inputs = {
     nicpkgs.url = "github:nicball/nicpkgs";
-    nixpkgs.url = "github:NixOS/nixpkgs/dd9b079222d43e1943b6ebd802f04fd959dc8e61";
+    nixpkgs.url = "github:NixOS/nixpkgs/15f4ee454b1dce334612fa6843b3e05cf546efab";
     instaepub.url = "github:nicball/instaepub";
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
