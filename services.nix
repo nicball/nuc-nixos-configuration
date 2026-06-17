@@ -145,26 +145,26 @@ in
       {
         skip_install_trust
       }
-      nicball.online, :80 {
+      flake.run, :80 {
         reverse_proxy /jsonrpc http://localhost:6800
         file_server * browse {
           root /srv/www
           hide .private
         }
       }
-      lick.nicball.online {
+      m.flake.run {
         reverse_proxy http://localhost:8008
       }
-      instaepub.nicball.online {
+      instaepub.flake.run {
         reverse_proxy http://localhost:8086
       }
-      nedrawtib.nicball.online {
+      bw.flake.run {
         reverse_proxy http://localhost:8000
       }
-      owncast.nicball.online {
+      owncast.flake.run {
         reverse_proxy http://localhost:8082
       }
-      ping.nicball.online {
+      ping.flake.run {
         header {
           Cache-Control no-store
         }
@@ -254,7 +254,6 @@ in
     after = [ "network.target" ];
     proxy = true;
     dir = "instaepub";
-    environment.HOSTNAME = "instaepub.nicball.online";
     serviceConfig = {
       ExecStart = "${pkgs.instaepub}/bin/instaepub";
     };
@@ -305,7 +304,7 @@ in
   systemd.services.vaultwarden.serviceConfig.WorkingDirectory = "/var/lib/vaultwarden";
 
   networking.firewall = {
-    allowedTCPPorts = [ 80 443 1935 25565 5901 7890 ];
+    allowedTCPPorts = [ 80 443 1935 25565 5901 9090 7890 ];
     allowedUDPPortRanges = [ { from = 6881; to = 6999; } ];
     allowedTCPPortRanges = [ { from = 6881; to = 6999; } ];
   };

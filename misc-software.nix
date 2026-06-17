@@ -10,7 +10,7 @@
   security.sudo.wheelNeedsPassword = false;
 
   # Fish shell
-  programs.fish.enable = true;
+  nic.fish.enable = true;
 
   # Zsh
   # programs.zsh = {

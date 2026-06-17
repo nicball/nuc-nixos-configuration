@@ -9,7 +9,7 @@ let
 in
 
 {
-  hardware.graphics.extraPackages = with pkgs; [ intel-media-driver intel-ocl intel-compute-runtime ];
+  hardware.graphics.extraPackages = with pkgs; [ intel-media-driver intel-compute-runtime-legacy1 ];
   environment.sessionVariables.LIBVA_DRIVER_NAME = "iHD";
 
   systemd.services.auto-set-epp =
